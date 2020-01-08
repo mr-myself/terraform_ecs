@@ -6,7 +6,7 @@ terraform {
   backend "s3" {
     encrypt = "true"
     region = "ap-northeast-1"
-    bucket = "terraform_ecs-tfstates"
+    bucket = "staging-terraform_ecs-tfstates"
     key = "terraform.tfstate"
     acl = "bucket-owner-full-control"
   }

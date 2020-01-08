@@ -59,7 +59,7 @@ resource "aws_security_group" "rds_sg" {
 }
 
 resource "aws_db_parameter_group" "default" {
-  name = "rds-pg"
+  name = "${var.environment}-rds-pg"
   family = "mysql5.7"
   description = "Managed by Terraform"
 

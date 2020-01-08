@@ -2,7 +2,7 @@
 Cloudwatch Log Group
 ======*/
 resource "aws_cloudwatch_log_group" "terraform_ecs" {
-  name = "terraform_ecs"
+  name = "${var.environment}-terraform_ecs"
 
   tags = {
     Environment = var.environment
@@ -29,7 +29,7 @@ data "template_file" "web_task" {
     image           = "${var.repository_url}:${var.repository_tag}"
     secret_key_base = var.secret_key_base
     database_url    = "mysql2://${var.database_username}:${var.database_password}@${var.database_endpoint}:3306/${var.database_name}?encoding=utf8&pool=40"
-    log_group       = "${var.environment}-${aws_cloudwatch_log_group.terraform_ecs.name}"
+    log_group       = "${aws_cloudwatch_log_group.terraform_ecs.name}"
     environment     = var.environment
   }
 }
@@ -53,7 +53,7 @@ data "template_file" "db_create_task" {
     image           = "${var.repository_url}:${var.repository_tag}"
     secret_key_base = var.secret_key_base
     database_url    = "mysql2://${var.database_username}:${var.database_password}@${var.database_endpoint}:3306"
-    log_group       = "${var.environment}-${aws_cloudwatch_log_group.terraform_ecs.name}"
+    log_group       = "${aws_cloudwatch_log_group.terraform_ecs.name}"
     environment     = var.environment
     mysql_host      = var.database_endpoint
     mysql_password  = var.database_password
@@ -169,6 +169,22 @@ resource "aws_alb" "alb_terraform_ecs" {
   }
 }
 
+resource "aws_alb_listener" "terraform_ecs_http" {
+  load_balancer_arn = aws_alb.alb_kotoage.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
 resource "aws_alb_listener" "terraform_ecs" {
   load_balancer_arn = aws_alb.alb_terraform_ecs.arn
   port              = "443"
@@ -212,7 +228,7 @@ data "aws_iam_policy_document" "ecs_service_role" {
 }
 
 resource "aws_iam_role" "ecs_role" {
-  name               = "ecs_role"
+  name               = "${var.environment}-ecs_role"
   assume_role_policy = data.aws_iam_policy_document.ecs_service_role.json
 }
 
@@ -239,7 +255,7 @@ resource "aws_iam_role_policy" "ecs_service_role_policy" {
 
 /* role that the Amazon ECS container agent and the Docker daemon can assume */
 resource "aws_iam_role" "ecs_execution_role" {
-  name               = "ecs_task_execution_role"
+  name               = "${var.environment}-ecs_task_execution_role"
   assume_role_policy = file("${path.module}/policies/ecs-task-execution-role.json")
 }
 resource "aws_iam_role_policy" "ecs_execution_role_policy" {
